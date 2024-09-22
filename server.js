@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
 app.use(express.json());
 
 // Supabase Connection String (Replace [YOUR-PASSWORD])
-const connectionString = "postgresql://postgres.arpfturarbmnxocszauw:Wez48k7HapmdiwU6@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
+const connectionString = "postgresql://postgres.arpfturarbmnxocszauw:@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 
 app.post('/api/find-match', async (req, res) => {
   const { game, rank, userGender } = req.body;
