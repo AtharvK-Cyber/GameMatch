@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
 
 app.use(express.json());
 
-// Supabase Connection String
+// Supabase Connection String (Replace [YOUR-PASSWORD])
 const connectionString = "postgresql://postgres.arpfturarbmnxocszauw:Wez48k7HapmdiwU6@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 
 app.post('/api/find-match', async (req, res) => {
@@ -51,18 +51,15 @@ app.post('/api/find-match', async (req, res) => {
 // MATCHMAKING FUNCTION (with text-based rank comparison)
 async function findMatchingUser(game, rank, userGender, matchRequestId, pool) {
   try {
-    // Define the rank order for comparison (add all your rank values)
     const rankOrder = [
-      "Iron 1", "Iron 2", "Iron 3", "Bronze", "Silver 1", "Silver 2", "Silver 3", 
-      "Gold 1", "Gold 2", "Gold 3", "Platinum 1", "Platinum 2", "Platinum 3", 
-      "Diamond 1", "Diamond 2", "Diamond 3", "Immortal 1", "Immortal 2", "Immortal 3", 
-      "Conqueror" 
-    ]; 
+      "Iron 1", "Iron 2", "Iron 3", "Bronze", "Silver 1", "Silver 2", "Silver 3",
+      "Gold 1", "Gold 2", "Gold 3", "Platinum 1", "Platinum 2", "Platinum 3",
+      "Diamond 1", "Diamond 2", "Diamond 3", "Immortal 1", "Immortal 2", "Immortal 3",
+      "Conqueror"
+    ];
 
-    // Find the index of the current rank
     const currentRankIndex = rankOrder.indexOf(rank);
 
-    // Get the ranks within one level above and below (if they exist)
     const allowedRanks = [rank];
     if (currentRankIndex > 0) {
       allowedRanks.push(rankOrder[currentRankIndex - 1]);
@@ -71,7 +68,6 @@ async function findMatchingUser(game, rank, userGender, matchRequestId, pool) {
       allowedRanks.push(rankOrder[currentRankIndex + 1]);
     }
 
-    // SQL Query with Rank Comparison
     const queryResult = await pool.query(`
       SELECT * 
       FROM users 
@@ -79,7 +75,7 @@ async function findMatchingUser(game, rank, userGender, matchRequestId, pool) {
         game = $1 AND   
         gender != $2   
         AND id != $3    
-        AND rank = ANY($4)  -- Compare ranks 
+        AND rank = ANY($4) 
       LIMIT 1         
     `, [game, userGender, matchRequestId, allowedRanks]);
 
