@@ -2,65 +2,95 @@ const express = require('express');
 const app = express();
 const port = 3001;
 const { Pool } = require('pg');
-const { v4: uuidv4 } = require('uuid'); // Import the 'uuid' package
+const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
 
-app.use(express.json()); 
+app.use(express.json());
+
+// Supabase Connection String
+const connectionString = "postgresql://postgres.arpfturarbmnxocszauw:Wez48k7HapmdiwU6@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 
 app.post('/api/find-match', async (req, res) => {
   const { game, rank, userGender } = req.body;
 
   try {
     // 1. Database Connection
-    const pool = new Pool({
-      connectionString: "postgresql://postgres.arpfturarbmnxocszauw:Wez48k7HapmdiwU6@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
-    });
+    const pool = new Pool({ connectionString });
 
-    // 2. Test Connection (optional)
-    // ...
+    // 2. Generate Unique Match Request ID
+    const matchRequestId = uuidv4();
 
-    // 3. Generate a Unique Match Request ID
-    const matchRequestId = uuidv4(); 
-
-    // 4. Store Match Request Data with the ID
-    const insertRequestResult = await pool.query(
-      'INSERT INTO match_requests (id, game, rank, gender) VALUES ($1, $2, $3, $4) RETURNING id',
+    // 3. Store Match Request Data (directly in the 'users' table for now)
+    const insertUserResult = await pool.query(
+      'INSERT INTO users (id, game, rank, gender) VALUES ($1, $2, $3, $4)',
       [matchRequestId, game, rank, userGender]
     );
-    console.log('Match request inserted with ID:', matchRequestId);
+    console.log('User data inserted with ID:', matchRequestId);
 
-    // 5. Find a Match
-    const matchedUser = await findMatchingUser(game, rank, userGender, matchRequestId, pool); 
+    // 4. Find a Match
+    const matchedUser = await findMatchingUser(game, rank, userGender, matchRequestId, pool);
 
-    // 6. Send Response
-    // ... (same as before)
+    // 5. Send Response
+    if (matchedUser) {
+      res.json({
+        message: 'Match found!',
+        matchData: matchedUser
+      });
+    } else {
+      res.status(404).json({ message: 'No match found.' });
+    }
 
-    // 7. Release Connection
-    await pool.end(); 
+    // 6. Release Connection
+    await pool.end();
 
   } catch (error) {
-    // ... (error handling)
+    console.error('Error in /api/find-match:', error);
+    res.status(500).json({ message: 'Failed to find a match' });
   }
 });
 
-// MATCHMAKING FUNCTION (updated to exclude match requester)
-async function findMatchingUser(game, rank, userGender, matchRequestId, pool) { 
+// MATCHMAKING FUNCTION (with text-based rank comparison)
+async function findMatchingUser(game, rank, userGender, matchRequestId, pool) {
   try {
-    // ... (You'll add rank comparison logic here later)
+    // Define the rank order for comparison (add all your rank values)
+    const rankOrder = [
+      "Iron 1", "Iron 2", "Iron 3", "Bronze", "Silver 1", "Silver 2", "Silver 3", 
+      "Gold 1", "Gold 2", "Gold 3", "Platinum 1", "Platinum 2", "Platinum 3", 
+      "Diamond 1", "Diamond 2", "Diamond 3", "Immortal 1", "Immortal 2", "Immortal 3", 
+      "Conqueror" 
+    ]; 
 
+    // Find the index of the current rank
+    const currentRankIndex = rankOrder.indexOf(rank);
+
+    // Get the ranks within one level above and below (if they exist)
+    const allowedRanks = [rank];
+    if (currentRankIndex > 0) {
+      allowedRanks.push(rankOrder[currentRankIndex - 1]);
+    }
+    if (currentRankIndex < rankOrder.length - 1) {
+      allowedRanks.push(rankOrder[currentRankIndex + 1]);
+    }
+
+    // SQL Query with Rank Comparison
     const queryResult = await pool.query(`
       SELECT * 
       FROM users 
       WHERE 
         game = $1 AND   
         gender != $2   
-        AND id != $3   -- Exclude the match requester's ID
+        AND id != $3    
+        AND rank = ANY($4)  -- Compare ranks 
       LIMIT 1         
-    `, [game, userGender, matchRequestId]);
+    `, [game, userGender, matchRequestId, allowedRanks]);
 
-    // ... (rest of the function - same as before)
-
+    if (queryResult.rows.length > 0) {
+      return queryResult.rows[0];
+    } else {
+      return null;
+    }
   } catch (error) {
-    // ... (error handling)
+    console.error("Error finding matching user:", error);
+    throw error;
   }
 }
 
