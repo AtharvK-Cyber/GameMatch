@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Your Gaming Partner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Find Your Gaming Partner</h1>
+    <div class="form-container">
+     <form id="partnerForm" onsubmit="return false;"> 
+        <label for="game">Favorite Game:</label>
+        <input type="text" id="game" name="game" placeholder="Enter your favorite game" required>
+
+        <label for="rank">Rank (Optional):</label>
+        <input type="text" id="rank" name="rank" placeholder="Enter your rank">
+
+        <label for="gender">What is your gender?</label>
+        <select id="gender" name="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option> 
+        </select>
+
+        <button type="submit" id="findButton">Find Partner</button>
+      </form>
+    </div>
+    <div class="anime-character">
+      <img src="" alt="Anime Character">
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
